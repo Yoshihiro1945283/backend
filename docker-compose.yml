@@ -1,32 +1,60 @@
+# docker-compose ファイルのバージョン（v3.8 は汎用性が高くよく使われる）
 version: '3.8'
 
 services:
+  # FastAPI アプリのサービス定義
   web:
+    # Dockerfile を使ってイメージをビルド
     build: .
+    
+    # コンテナ名を明示的に設定（任意の名前を指定可能）
     container_name: fastapi-app
+
+    # ホストの 8000 番ポートをコンテナの 8000 番にマッピング（FastAPI が使用）
     ports:
       - "8000:8000"
+
+    # ホスト側の ./app ディレクトリをコンテナの /app にマウント（ソースコードの同期）
     volumes:
       - ./app:/app
+
+    # 環境変数を定義した .env ファイルを読み込む
     env_file:
       - .env
+
+    # db サービスが先に起動してからこのサービスが起動するように依存関係を明示
     depends_on:
       - db
+
+    # コンテナ起動時の実行コマンド（開発用：ホットリロードを有効にして uvicorn を起動）
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
+  # MySQL データベースのサービス定義
   db:
+    # 使用する公式 MySQL イメージのバージョンを指定（8.0）
     image: mysql:8.0
+
+    # コンテナ名を明示的に設定
     container_name: mysql-db
+
+    # コンテナが落ちた場合に自動再起動する設定
     restart: always
+
+    # データベースの初期設定を環境変数で指定（.env から値を取得）
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
+    # ホストの 3306 番ポートをコンテナの 3306 番にマッピング（MySQL のデフォルトポート）
     ports:
       - "3306:3306"
+
+    # データ永続化のためのボリュームをマウント（MySQL のデータを保持）
     volumes:
       - db-data:/var/lib/mysql
 
+# 名前付きボリュームの定義（MySQL の永続化データ用）
 volumes:
   db-data:
